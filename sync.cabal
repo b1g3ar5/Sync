@@ -1,0 +1,13 @@
+Name:                sync
+Version:             0.0
+Description:         Synchronises using FTP
+License:             GPL
+License-file:        LICENSE
+Author:              Nick Straw
+Maintainer:          nick@broxholme.com
+Build-Type:          Simple
+Cabal-Version:       >=1.2
+Library
+  Exposed-modules:   Sync
+  Build-Depends:     base >= 3 && < 5, date, MissingH, ftphs, time, filepath, directory
+  ghc-options:       -Wall  
