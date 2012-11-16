@@ -59,6 +59,10 @@ data Dir = Dir {path::Path, fs::[FileStats]} deriving (Show)
 
 open_bookclub::FilePath->IO (Dir, Dir)
 open_bookclub pp = do
+        -- LOCAL first
+        let loc = Local $ "C:/Documents and Settings/Owner/workspace/bookclub/_site/" ++ pp ++ "/"
+        ldir<-getDir loc        
+        -- NOW FTP remote
         let brox_address = "ftp1.namesco.net"
         let brox_usr = "broxholme.com"
         let brox_pwd = "55s1nc3r1ty"
@@ -67,8 +71,7 @@ open_bookclub pp = do
         brox_res2 <- cwd brox_conn $ "./web/" ++ pp ++ "/"        
         let brox = FtpPath brox_address brox_usr brox_pwd brox_conn brox_res2
         rdir<-getDir $ Ftp brox
-        let loc = Local $ "C:\\Documents and Settings\\Robin Seeley\\workspace\\Bookclub\\_site\\" ++ pp ++ "\\"
-        ldir<-getDir loc        
+        
         return (rdir, ldir)
 
 open_brayfordlets::FilePath->IO (Dir, Dir)
