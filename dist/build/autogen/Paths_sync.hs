@@ -16,7 +16,7 @@ version = Version {versionBranch = [0,0], versionTags = []}
 bindir, libdir, datadir, libexecdir :: FilePath
 
 bindir     = "c:/Documents and Settings/Robin Seeley/workspace/bin\\bin"
-libdir     = "c:/Documents and Settings/Robin Seeley/workspace/bin\\sync-0.0\\ghc-7.4.1"
+libdir     = "c:/Documents and Settings/Robin Seeley/workspace/bin\\sync-0.0\\ghc-7.4.2"
 datadir    = "c:/Documents and Settings/Robin Seeley/workspace/bin\\sync-0.0"
 libexecdir = "c:/Documents and Settings/Robin Seeley/workspace/bin\\sync-0.0"
 

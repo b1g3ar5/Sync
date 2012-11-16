@@ -18,6 +18,8 @@ module Sync
         , FtpPath(..)
         , bookclub
         , open_bookclub
+        , brayfordlets
+        , open_brayfordlets
         , sync
         , seqList
     ) where
@@ -61,7 +63,7 @@ open_bookclub pp = do
         let brox_usr = "broxholme.com"
         let brox_pwd = "55s1nc3r1ty"
         brox_conn <- easyConnectFTP brox_address
-        brox_res1 <- login brox_conn brox_usr (Just brox_pwd) Nothing
+        _ <- login brox_conn brox_usr (Just brox_pwd) Nothing
         brox_res2 <- cwd brox_conn $ "./web/" ++ pp ++ "/"        
         let brox = FtpPath brox_address brox_usr brox_pwd brox_conn brox_res2
         rdir<-getDir $ Ftp brox
@@ -69,39 +71,58 @@ open_bookclub pp = do
         ldir<-getDir loc        
         return (rdir, ldir)
 
-bookclub::IO [()]
+open_brayfordlets::FilePath->IO (Dir, Dir)
+open_brayfordlets pp = do
+        let address = "ftp1.namesco.net"
+        let usr = "brayfordlets.co.uk"
+        let pwd = "5kipper55"
+        conn <- easyConnectFTP address
+        _ <- login conn usr (Just pwd) Nothing
+        res2 <- cwd conn $ "./web/" ++ pp ++ "/"        
+        let p = FtpPath address usr pwd conn res2
+        rdir<-getDir $ Ftp p
+        let loc = Local $ "C:\\Documents and Settings\\Robin Seeley\\workspace\\Brayfordlets\\_site\\" ++ pp ++ "\\"
+        ldir<-getDir loc        
+        return (rdir, ldir)
+
+bookclub::IO [[String]]
 bookclub = do
         let ds = ["pages", "css", "xml"]
         mapM (\d-> do
                     (rdir, ldir) <- open_bookclub d
                     sync ldir rdir
-                    return ()
+            ) ds
+
+brayfordlets::IO [[String]]
+brayfordlets = do
+        let ds = ["pages", "css", "images", "photos"]
+        mapM (\d-> do
+                    (rdir, ldir) <- open_brayfordlets d
+                    sync ldir rdir
             ) ds
 
 -- This is how to use these functions
-sync::Dir->Dir->IO [()]
+sync::Dir->Dir->IO [String]
 sync new old = do
-    copy (toCopy new old) old
-    rm (toDelete old new)
+    lcstr <- copy (toCopy new old) old
+    lrstr <- rm (toDelete old new)
+    return $ lcstr ++ lrstr
     
 -- currently old must be local!!!
-copy::Dir->Dir->IO [()]
+copy::Dir->Dir->IO [String]
 copy new old = do
     setCurrentDirectory $ show $ path new
     case path old of
-        Ftp opath -> sequence $ map (\fs-> do 
-                                            r<-uploadbinary (conn opath) (fname fs)
-                                            return ()
+        Ftp opath -> sequence $ map (\fs'-> liftM show $ uploadbinary (conn opath) (fname fs')
                                     ) (seqList $ fs new)
-        Local opath -> sequence $ map (\fs->copyFile ((show $ path new) ++ fname fs) ((show $ path old) ++ fname fs)) (fs new)
+        Local _ -> sequence $ map (\fs'-> liftM show $ copyFile ((show $ path new) ++ fname fs') ((show $ path old) ++ fname fs')
+                                  ) (fs new)
     
-rm::Dir->IO [()]
+rm::Dir->IO [String]
 rm old = do
     case path old of
-        Local opath -> sequence $ map (\f-> removeFile $ opath ++ fname f) (fs old)
-        Ftp opath -> sequence $ map (\f-> do
-                                            r<-delete (conn opath) (fname f)
-                                            return ()
+        Local opath -> sequence $ map (\f-> liftM show $ removeFile $ opath ++ fname f) (fs old)
+        Ftp opath -> sequence $ map (\f-> liftM show $ delete (conn opath) (fname f)
                                     ) (seqList $ fs old)
     
 
@@ -149,14 +170,14 @@ dontCopyFile new old = (fname new == fname old) && (fdate new <= fdate old)
 -- These are the files that eneed to be deleted
 toDelete::Dir->Dir->Dir
 toDelete (Dir n []) _ = Dir n[]
-toDelete old (Dir n []) = old
+toDelete old (Dir _ []) = old
 toDelete old new = Dir (path old) $ deleteFirstsBy (\o n -> fname n == fname o) (fs old) (fs new)
 
 -- | Creates a list of all the files that need to be copied
 -- This will be all the ones that don't satisfy dontCopyFile
 toCopy::Dir->Dir->Dir
 toCopy (Dir n []) _ = Dir n []
-toCopy new (Dir n []) = new
+toCopy new (Dir _ []) = new
 toCopy new old = Dir (path new) $ deleteFirstsBy (\o n -> (fname n == fname o) && (fdate n <= fdate o)) (fs new) (fs old)
 
 -- | Has to be in IO because of getDirectoryContents
@@ -167,26 +188,26 @@ getDir p = handle doNothing2 $ do
     case p of
         Ftp fp -> do 
                     files <- nlst (conn fp) Nothing
-                    fs <- sequence $ map (file2fileStats p) $ seqList files 
-                    return $ Dir p fs
+                    fs' <- sequence $ map (file2fileStats p) $ seqList files 
+                    return $ Dir p fs'
         Local lpath -> do 
                         files <- liftM (filter (\x-> (x/="." && x/=".."))) $ getDirectoryContents lpath
-                        fs<- sequence $ map (file2fileStats p) files 
-                        return $ Dir p fs
+                        fs'<- sequence $ map (file2fileStats p) files 
+                        return $ Dir p fs'
   
 -- | Has to be in IO because we have to open the file
 -- handles potential errors in openFile
 saferFileSize :: FilePath -> IO (Maybe Integer)
-saferFileSize path = handle doNothing $ do
-  h <- openFile path ReadMode
-  size <- hFileSize h
+saferFileSize path' = handle doNothing $ do
+  h <- openFile path' ReadMode
+  size' <- hFileSize h
   hClose h
-  return (Just size) 
+  return (Just size') 
    
 -- I think handle catches erorrs - so this just returns Nothing when it does
 doNothing :: IOError -> IO (Maybe a)
-doNothing e = return Nothing    
+doNothing _ = return Nothing    
 
 -- I think handle catches errors - so this just returns Nothing when it does
 doNothing2 :: IOError -> IO Dir
-doNothing2 e = return (Dir (Local "") [])
+doNothing2 _ = return (Dir (Local "") [])
