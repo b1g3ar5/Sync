@@ -15,10 +15,10 @@ version :: Version
 version = Version {versionBranch = [0,0], versionTags = []}
 bindir, libdir, datadir, libexecdir :: FilePath
 
-bindir     = "c:/Documents and Settings/Robin Seeley/workspace/bin\\bin"
-libdir     = "c:/Documents and Settings/Robin Seeley/workspace/bin\\sync-0.0\\ghc-7.4.1"
-datadir    = "c:/Documents and Settings/Robin Seeley/workspace/bin\\sync-0.0"
-libexecdir = "c:/Documents and Settings/Robin Seeley/workspace/bin\\sync-0.0"
+bindir     = "c:/Documents and Settings/Owner/workspace/bin\\bin"
+libdir     = "c:/Documents and Settings/Owner/workspace/bin\\sync-0.0\\ghc-7.4.1"
+datadir    = "c:/Documents and Settings/Owner/workspace/bin\\sync-0.0"
+libexecdir = "c:/Documents and Settings/Owner/workspace/bin\\sync-0.0"
 
 getBinDir, getLibDir, getDataDir, getLibexecDir :: IO FilePath
 getBinDir = catchIO (getEnv "sync_bindir") (\_ -> return bindir)

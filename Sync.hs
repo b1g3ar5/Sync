@@ -57,16 +57,19 @@ data Dir = Dir {path::Path, fs::[FileStats]} deriving (Show)
 
 open_bookclub::FilePath->IO (Dir, Dir)
 open_bookclub pp = do
+        -- LOCAL first
+        let loc = Local $ "C:/Documents and Settings/Owner/workspace/bookclub/_site/" ++ pp ++ "/"
+        ldir<-getDir loc        
+        -- NOW FTP remote
         let brox_address = "ftp1.namesco.net"
         let brox_usr = "broxholme.com"
         let brox_pwd = "55s1nc3r1ty"
         brox_conn <- easyConnectFTP brox_address
-        brox_res1 <- login brox_conn brox_usr (Just brox_pwd) Nothing
+        login brox_conn brox_usr (Just brox_pwd) Nothing
         brox_res2 <- cwd brox_conn $ "./web/" ++ pp ++ "/"        
         let brox = FtpPath brox_address brox_usr brox_pwd brox_conn brox_res2
         rdir<-getDir $ Ftp brox
-        let loc = Local $ "C:\\Documents and Settings\\Robin Seeley\\workspace\\Bookclub\\_site\\" ++ pp ++ "\\"
-        ldir<-getDir loc        
+        
         return (rdir, ldir)
 
 bookclub::IO [()]
@@ -89,18 +92,18 @@ copy::Dir->Dir->IO [()]
 copy new old = do
     setCurrentDirectory $ show $ path new
     case path old of
-        Ftp opath -> sequence $ map (\fs-> do 
-                                            r<-uploadbinary (conn opath) (fname fs)
+        Ftp opath -> sequence $ map (\fs'-> do 
+                                            uploadbinary (conn opath) (fname fs')
                                             return ()
                                     ) (seqList $ fs new)
-        Local opath -> sequence $ map (\fs->copyFile ((show $ path new) ++ fname fs) ((show $ path old) ++ fname fs)) (fs new)
+        Local _ -> sequence $ map (\fs'->copyFile ((show $ path new) ++ fname fs') ((show $ path old) ++ fname fs')) (fs new)
     
 rm::Dir->IO [()]
 rm old = do
     case path old of
         Local opath -> sequence $ map (\f-> removeFile $ opath ++ fname f) (fs old)
         Ftp opath -> sequence $ map (\f-> do
-                                            r<-delete (conn opath) (fname f)
+                                            delete (conn opath) (fname f)
                                             return ()
                                     ) (seqList $ fs old)
     
@@ -149,14 +152,14 @@ dontCopyFile new old = (fname new == fname old) && (fdate new <= fdate old)
 -- These are the files that eneed to be deleted
 toDelete::Dir->Dir->Dir
 toDelete (Dir n []) _ = Dir n[]
-toDelete old (Dir n []) = old
+toDelete old (Dir _ []) = old
 toDelete old new = Dir (path old) $ deleteFirstsBy (\o n -> fname n == fname o) (fs old) (fs new)
 
 -- | Creates a list of all the files that need to be copied
 -- This will be all the ones that don't satisfy dontCopyFile
 toCopy::Dir->Dir->Dir
 toCopy (Dir n []) _ = Dir n []
-toCopy new (Dir n []) = new
+toCopy new (Dir _ []) = new
 toCopy new old = Dir (path new) $ deleteFirstsBy (\o n -> (fname n == fname o) && (fdate n <= fdate o)) (fs new) (fs old)
 
 -- | Has to be in IO because of getDirectoryContents
@@ -167,26 +170,26 @@ getDir p = handle doNothing2 $ do
     case p of
         Ftp fp -> do 
                     files <- nlst (conn fp) Nothing
-                    fs <- sequence $ map (file2fileStats p) $ seqList files 
-                    return $ Dir p fs
+                    fs' <- sequence $ map (file2fileStats p) $ seqList files 
+                    return $ Dir p fs'
         Local lpath -> do 
                         files <- liftM (filter (\x-> (x/="." && x/=".."))) $ getDirectoryContents lpath
-                        fs<- sequence $ map (file2fileStats p) files 
-                        return $ Dir p fs
+                        fs'<- sequence $ map (file2fileStats p) files 
+                        return $ Dir p fs'
   
 -- | Has to be in IO because we have to open the file
 -- handles potential errors in openFile
 saferFileSize :: FilePath -> IO (Maybe Integer)
-saferFileSize path = handle doNothing $ do
-  h <- openFile path ReadMode
-  size <- hFileSize h
+saferFileSize path' = handle doNothing $ do
+  h <- openFile path' ReadMode
+  size' <- hFileSize h
   hClose h
-  return (Just size) 
+  return (Just size') 
    
 -- I think handle catches erorrs - so this just returns Nothing when it does
 doNothing :: IOError -> IO (Maybe a)
-doNothing e = return Nothing    
+doNothing _ = return Nothing    
 
 -- I think handle catches errors - so this just returns Nothing when it does
 doNothing2 :: IOError -> IO Dir
-doNothing2 e = return (Dir (Local "") [])
+doNothing2 _ = return (Dir (Local "") [])
