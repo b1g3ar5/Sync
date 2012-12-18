@@ -60,7 +60,7 @@ data Dir = Dir {path::Path, fs::[FileStats]} deriving (Show)
 open_bookclub::FilePath->IO (Dir, Dir)
 open_bookclub pp = do
         -- LOCAL first
-        let loc = Local $ "C:/Documents and Settings/Owner/workspace/bookclub/_site/" ++ pp ++ "/"
+        let loc = Local $ "C:/Documents and Settings/Robin Seeley/workspace/bookclub/_site/" ++ pp ++ "/"
         ldir<-getDir loc        
         -- NOW FTP remote
         let brox_address = "ftp1.namesco.net"
@@ -78,10 +78,12 @@ open_brayfordlets::FilePath->IO (Dir, Dir)
 open_brayfordlets pp = do
         let address = "ftp1.namesco.net"
         let usr = "brayfordlets.co.uk"
-        let pwd = "5kipper55"
+        let pwd = "55s1nc3r1ty"
         conn <- easyConnectFTP address
         _ <- login conn usr (Just pwd) Nothing
-        res2 <- cwd conn $ "./web/" ++ pp ++ "/"        
+        -- convert pages to lincoln student accommodation
+        let rpp = if pp=="pages" then "lincoln student accommodation" else pp
+        res2 <- cwd conn $ "./web/" ++ rpp ++ "/"        
         let p = FtpPath address usr pwd conn res2
         rdir<-getDir $ Ftp p
         let loc = Local $ "C:\\Documents and Settings\\Robin Seeley\\workspace\\Brayfordlets\\_site\\" ++ pp ++ "\\"
@@ -116,7 +118,9 @@ copy::Dir->Dir->IO [String]
 copy new old = do
     setCurrentDirectory $ show $ path new
     case path old of
-        Ftp opath -> sequence $ map (\fs'-> liftM show $ uploadbinary (conn opath) (fname fs')
+        Ftp opath -> sequence $ map (\fs'-> do
+                                        ftpstr<-liftM show $ uploadbinary (conn opath) (fname fs')
+                                        return $ fname fs' ++ ":" ++ ftpstr
                                     ) (seqList $ fs new)
         Local _ -> sequence $ map (\fs'-> liftM show $ copyFile ((show $ path new) ++ fname fs') ((show $ path old) ++ fname fs')
                                   ) (fs new)
