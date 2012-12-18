@@ -65,7 +65,7 @@ open_bookclub pp = do
         -- NOW FTP remote
         let brox_address = "ftp1.namesco.net"
         let brox_usr = "broxholme.com"
-        let brox_pwd = "55s1nc3r1ty"
+        let brox_pwd = ""
         brox_conn <- easyConnectFTP brox_address
         _ <- login brox_conn brox_usr (Just brox_pwd) Nothing
         brox_res2 <- cwd brox_conn $ "./web/" ++ pp ++ "/"        
@@ -78,7 +78,7 @@ open_brayfordlets::FilePath->IO (Dir, Dir)
 open_brayfordlets pp = do
         let address = "ftp1.namesco.net"
         let usr = "brayfordlets.co.uk"
-        let pwd = "55s1nc3r1ty"
+        let pwd = ""
         conn <- easyConnectFTP address
         _ <- login conn usr (Just pwd) Nothing
         -- convert pages to lincoln student accommodation
