@@ -1,0 +1,7 @@
+flags: {}
+packages:
+- '.'
+- '../date'
+extra-deps:
+- ftphs-1.0.9.1
+resolver: lts-11.1
