@@ -78,7 +78,7 @@ openBookclub pp = do
     -- NOW FTP remote
     let brox_address = "ftp1.namesco.net"
     let brox_usr = "broxholme.com"
-    let brox_pwd = "s1nc3r3d4rT5porno"
+    let brox_pwd = ""
     brox_conn <- easyConnectFTP brox_address
     _ <- login brox_conn brox_usr (Just brox_pwd) Nothing
     --enableFTPDebugging
